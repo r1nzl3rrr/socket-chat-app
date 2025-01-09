@@ -1,0 +1,54 @@
+﻿<Window x:Class="ChatClient.Views.ChatWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:local="clr-namespace:ChatClient.Views"
+        mc:Ignorable="d"
+        Title="ChatWindow" Height="500" Width="800"
+        Background="{DynamicResource MaterialDesignPaper}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"></RowDefinition>
+            <RowDefinition Height="350"></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock x:Name="title" Grid.Column="1" Grid.Row="0" Text="Client" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+        <!-- Back To Home Button -->
+        <Button Grid.Column="0" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" Width="50" Height="30"
+                Style="{DynamicResource MaterialDesignFlatButton}"
+                Click="BackButton_Click">
+            <StackPanel Orientation="Horizontal">
+                <materialDesign:PackIcon Kind="ArrowBack" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Button>
+
+        <!-- Chat Box -->
+        <ScrollViewer x:Name="ChatScrollViewer" Grid.Column="1" Grid.Row="1" Background="White" Margin="0 0 30 0">
+            <StackPanel x:Name="ChatStackPanel">
+                <!-- Messages will be generated here -->
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Input Section -->
+        <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+            <TextBox x:Name="MessageTextBox" Height="30" MinWidth="500" Margin="0 0 20 0"
+                     materialDesign:HintAssist.Hint="Type a message"
+                     KeyDown="MessageTextBox_KeyDown"></TextBox>
+            <Button HorizontalAlignment="Right" VerticalAlignment="Center" Width="50" Height="30" Margin="0 0 50 0" 
+                    Foreground="AntiqueWhite" Click="SendButton_Click">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Send" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

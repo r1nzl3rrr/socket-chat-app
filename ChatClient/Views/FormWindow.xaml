@@ -1,0 +1,33 @@
+﻿<Window x:Class="ChatClient.Views.FormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:local="clr-namespace:ChatClient.Views"
+        mc:Ignorable="d"
+        Title="FormWindow" Height="400" Width="600"
+        Background="{DynamicResource MaterialDesignPaper}">
+    <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Width="300">
+            <!-- Title -->
+            <TextBlock Text="Enter Server Details" FontSize="24" FontWeight="Bold" Margin="10" HorizontalAlignment="Center" />
+
+            <!-- IP Address Field -->
+            <TextBox x:Name="IPTextBox" FontSize="16" Margin="5" Width="250"
+                     materialDesign:HintAssist.Hint="IP Address" BorderThickness="2"
+                     BorderBrush="{DynamicResource MaterialDesignDivider}" 
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
+
+            <!-- Port Field -->
+            <TextBox x:Name="PortTextBox" FontSize="16" Margin="5" Width="250"
+                     materialDesign:HintAssist.Hint="Port" BorderThickness="2"
+                     BorderBrush="{DynamicResource MaterialDesignDivider}" 
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
+
+            <!-- Submit Button -->
+            <Button Content="Connect" Width="250" Height="40" Margin="10" FontSize="18" Foreground="AntiqueWhite"
+                    Style="{DynamicResource MaterialDesignRaisedButton}" Click="ConnectButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
