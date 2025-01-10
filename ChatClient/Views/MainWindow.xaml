@@ -7,7 +7,8 @@
         xmlns:local="clr-namespace:ChatClient"
         mc:Ignorable="d"
         Title="MainWindow" Height="400" Width="600"
-        Background="{DynamicResource MaterialDesignPaper}">
+        Background="{DynamicResource MaterialDesignPaper}"
+        WindowStartupLocation="CenterScreen">
     <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
             <!-- Title -->

@@ -1,6 +1,10 @@
-﻿using System.Windows;
+﻿using Emoji.Wpf;
+using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using WindowsInput.Events;
+using TextBlock = Emoji.Wpf.TextBlock;
 
 namespace ChatClient.Views
 {
@@ -78,7 +82,7 @@ namespace ChatClient.Views
         }
 
         // Event handler for Enter key press inside the TextBox
-        private void MessageTextBox_KeyDown(object sender, KeyEventArgs e)
+        private void MessageTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             string message = MessageTextBox.Text;
             if (e.Key == Key.Enter && !CheckEmptyMessage(message))
@@ -135,7 +139,7 @@ namespace ChatClient.Views
             ChatScrollViewer.ScrollToBottom();
 
             // Clear the text box for the next message
-            MessageTextBox.Clear();
+            MessageTextBox.Text = "";
         }
 
         // Send the message to the server or client
@@ -178,6 +182,24 @@ namespace ChatClient.Views
                 // Close Client
                 _tcpClientService.CloseClient();
             }
+        }
+
+        // Show windows emoji picker
+        private async void EmojiButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Simulate Win + . hotkey
+            await WindowsInput.Simulate.Events()
+                .ClickChord(KeyCode.LWin, KeyCode.OemPeriod)
+                .Invoke();
+
+            // Delay to give the emoji picker time to appear
+            await Task.Delay(100);
+
+            // Regain focus on the TextBox
+            _ = Dispatcher.BeginInvoke(new Action(() =>
+            {
+                MessageTextBox.Focus();
+            }));
         }
     }
 }

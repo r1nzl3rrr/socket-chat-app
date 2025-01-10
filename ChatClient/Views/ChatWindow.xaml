@@ -4,10 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:emoji="clr-namespace:Emoji.Wpf;assembly=Emoji.Wpf"
         xmlns:local="clr-namespace:ChatClient.Views"
         mc:Ignorable="d"
         Title="ChatWindow" Height="500" Width="800"
-        Background="{DynamicResource MaterialDesignPaper}">
+        Background="{DynamicResource MaterialDesignPaper}"
+        WindowStartupLocation="CenterScreen">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="100"></ColumnDefinition>
@@ -40,10 +42,16 @@
 
         <!-- Input Section -->
         <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-            <TextBox x:Name="MessageTextBox" Height="30" MinWidth="500" Margin="0 0 20 0"
-                     materialDesign:HintAssist.Hint="Type a message"
-                     KeyDown="MessageTextBox_KeyDown"></TextBox>
-            <Button HorizontalAlignment="Right" VerticalAlignment="Center" Width="50" Height="30" Margin="0 0 50 0" 
+            <emoji:RichTextBox x:Name="MessageTextBox" Height="20" MinWidth="500" Margin="0 0 20 0"
+                               PreviewKeyDown="MessageTextBox_PreviewKeyDown">
+            </emoji:RichTextBox>
+            <Button HorizontalAlignment="Right" VerticalAlignment="Center" Width="50" Height="30" Margin="0 0 20 0" 
+                    Foreground="AntiqueWhite" Click="EmojiButton_Click">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Emoji" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button HorizontalAlignment="Right" VerticalAlignment="Center" Width="50" Height="30" 
                     Foreground="AntiqueWhite" Click="SendButton_Click">
                 <StackPanel Orientation="Horizontal">
                     <materialDesign:PackIcon Kind="Send" VerticalAlignment="Center"/>

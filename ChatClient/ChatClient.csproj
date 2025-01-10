@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Emoji.Wpf" Version="0.3.4" />
     <PackageReference Include="MaterialDesignThemes" Version="5.2.0" />
+    <PackageReference Include="WindowsInput" Version="6.4.1" />
   </ItemGroup>
 
 </Project>

@@ -29,7 +29,7 @@ public class TCPServerService
             _client = client;
             _clientStream = _client.GetStream(); // Store the stream
 
-            Byte[] bytes = new Byte[256];
+            Byte[] bytes = new Byte[1024];
             while ((count = await _clientStream.ReadAsync(bytes, 0, bytes.Length)) != 0)
             {
                 data = Encoding.UTF8.GetString(bytes, 0, count);
@@ -50,7 +50,6 @@ public class TCPServerService
     // This method will start the server and wait for connections asynchronously
     public async Task ExecuteServerAsync()
     {
-        int clientCount = 0;
         TcpListener server = null;
 
         try
@@ -64,7 +63,7 @@ public class TCPServerService
             while (true)
             {
                 TcpClient client = await server.AcceptTcpClientAsync();
-                Console.WriteLine($"Client connected! Total clients: {++clientCount}");
+                Console.WriteLine($"Client connected!");
 
                 // Process each connected client in a separate task
                 _ = Task.Run(() => ProcessDataAsync(client));
@@ -86,7 +85,7 @@ public class TCPServerService
     {
         if (_clientStream != null)
         {
-            byte[] msg = Encoding.ASCII.GetBytes(message);
+            byte[] msg = Encoding.UTF8.GetBytes(message);
             await _clientStream.WriteAsync(msg, 0, msg.Length);
             Console.WriteLine($"Sent to client: {message}");
         }

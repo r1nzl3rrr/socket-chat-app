@@ -40,7 +40,7 @@ public class TCPClientService
             if (_clientStream != null)
             {
                 // Convert the message to bytes and send it to the server
-                Byte[] data = Encoding.ASCII.GetBytes(message);
+                Byte[] data = Encoding.UTF8.GetBytes(message);
                 await _clientStream.WriteAsync(data, 0, data.Length);
             }
         }
@@ -59,12 +59,12 @@ public class TCPClientService
     {
         try
         {
-            Byte[] data = new Byte[256];
+            Byte[] data = new Byte[1024];
             int bytes;
 
             while ((bytes = await _clientStream.ReadAsync(data, 0, data.Length)) != 0)
             {
-                string responseData = Encoding.ASCII.GetString(data, 0, bytes);
+                string responseData = Encoding.UTF8.GetString(data, 0, bytes);
                 _updateUI?.Invoke($"{responseData}"); // Update the UI with the server's response
             }
         }
