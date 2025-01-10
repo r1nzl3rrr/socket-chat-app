@@ -6,7 +6,7 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:ChatClient.Views"
         mc:Ignorable="d"
-        Title="FormWindow" Height="400" Width="600"
+        Title="ChatApp" Height="400" Width="600"
         Background="{DynamicResource MaterialDesignPaper}"
         WindowStartupLocation="CenterScreen">
     <Grid VerticalAlignment="Center" HorizontalAlignment="Center">

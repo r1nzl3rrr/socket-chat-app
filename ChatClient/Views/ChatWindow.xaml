@@ -7,7 +7,7 @@
         xmlns:emoji="clr-namespace:Emoji.Wpf;assembly=Emoji.Wpf"
         xmlns:local="clr-namespace:ChatClient.Views"
         mc:Ignorable="d"
-        Title="ChatWindow" Height="500" Width="800"
+        Title="ChatApp" Height="500" Width="800"
         Background="{DynamicResource MaterialDesignPaper}"
         WindowStartupLocation="CenterScreen">
     <Grid>
@@ -42,8 +42,10 @@
 
         <!-- Input Section -->
         <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-            <emoji:RichTextBox x:Name="MessageTextBox" Height="20" MinWidth="500" Margin="0 0 20 0"
-                               PreviewKeyDown="MessageTextBox_PreviewKeyDown">
+            <emoji:RichTextBox x:Name="MessageTextBox" Height="30" MinWidth="500" Margin="0 0 20 0" Padding="10"
+                                 Background="LightGray" BorderBrush="Gray" BorderThickness="0"
+                                 FontSize="16" VerticalAlignment="Center"
+                                 PreviewKeyDown="MessageTextBox_PreviewKeyDown">
             </emoji:RichTextBox>
             <Button HorizontalAlignment="Right" VerticalAlignment="Center" Width="50" Height="30" Margin="0 0 20 0" 
                     Foreground="AntiqueWhite" Click="EmojiButton_Click">
