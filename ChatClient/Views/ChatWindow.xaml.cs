@@ -1,5 +1,7 @@
 ﻿using Emoji.Wpf;
 using System.Diagnostics;
+using System.Net.Sockets;
+using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -14,7 +16,8 @@ namespace ChatClient.Views
     public partial class ChatWindow : Window
     {
         private string _mode;
-        private string _ipAddress;
+        private string _hostIpAddress;
+        private string _machineIpAddress;
         private int _port;
         private TCPServerService _tcpServerService;
         private TCPClientService _tcpClientService;
@@ -26,9 +29,10 @@ namespace ChatClient.Views
         {
             InitializeComponent();
             this._mode = mode;
-            this._ipAddress = ipAddress;
+            this._hostIpAddress = ipAddress;
             this._port = port;
             title.Text = mode;
+            _machineIpAddress = GetLocalIpAddress();
             StartServerOrClient();
             InitializeMessage();
         }
@@ -39,13 +43,13 @@ namespace ChatClient.Views
             if (_mode == SERVER_STRING)
             {
                 // Start the server asynchronously
-                _tcpServerService = new TCPServerService(_ipAddress, _port, UpdateChatMessage);
+                _tcpServerService = new TCPServerService(_hostIpAddress, _port, UpdateChatMessage);
                 Task.Run(() => _tcpServerService.ExecuteServerAsync());
             }
             else if (_mode == CLIENT_STRING)
             {
                 // Connect to the server asynchronously
-                _tcpClientService = new TCPClientService(_ipAddress, _port, UpdateChatMessage);
+                _tcpClientService = new TCPClientService(_hostIpAddress, _port, UpdateChatMessage);
                 Task.Run(() => _tcpClientService.ConnectToServerAsync());
             }
         }
@@ -55,7 +59,7 @@ namespace ChatClient.Views
         {
             if (_mode != SERVER_STRING) return;
 
-            string message = string.Format("Listening to {0} on port {1}...", _ipAddress, _port);
+            string message = string.Format("Listening to {0} on port {1}...", _hostIpAddress, _port);
             TextBlock initMessage = CreateSenderMessage(message);
             AddMessageToChat(initMessage);
         }
@@ -104,7 +108,7 @@ namespace ChatClient.Views
         {
             TextBlock senderMessage = new TextBlock
             {
-                Text = $"{_mode} ({DateTime.Now:t}): {message}",  // Adding time in the format HH:mm
+                Text = $"{_mode} ({DateTime.Now:t}) [{_machineIpAddress}]: {message}",  // Adding time in the format HH:mm
                 Margin = new Thickness(5),
                 Padding = new Thickness(5),
                 Background = System.Windows.Media.Brushes.LightBlue
@@ -119,8 +123,8 @@ namespace ChatClient.Views
             TextBlock receiverMessage = new TextBlock
             {
                 Text = _mode == SERVER_STRING
-                    ? $"{CLIENT_STRING} ({DateTime.Now:t}): {message}"  // Adding time for the receiver
-                    : $"{SERVER_STRING} ({DateTime.Now:t}): {message}",
+                    ? $"{CLIENT_STRING} ({DateTime.Now:t}) {message}"  // Adding time for the receiver
+                    : $"{SERVER_STRING} ({DateTime.Now:t}) {message}",
                 Margin = new Thickness(5),
                 Padding = new Thickness(5),
                 Background = System.Windows.Media.Brushes.LightGray
@@ -148,11 +152,11 @@ namespace ChatClient.Views
             // Send the message to the client from the server
             if (_mode == SERVER_STRING)
             {
-                Task.Run(() => _tcpServerService.SendMessageToClientAsync(message));
+                Task.Run(() => _tcpServerService.BroadcastMessageToClientsParallel($"[{_machineIpAddress}]: {message}", null!));
             }
             else if (_mode == CLIENT_STRING)
             {
-                Task.Run(() => _tcpClientService.SendMessageAsync(message));
+                Task.Run(() => _tcpClientService.SendMessageAsync($"{message}"));
             }
         }
 
@@ -201,5 +205,14 @@ namespace ChatClient.Views
                 MessageTextBox.Focus();
             }));
         }
+
+        // Get machine local address
+        public string GetLocalIpAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            var ipAddress = host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+            return ipAddress?.ToString() ?? "No valid IP address found";
+        }
+
     }
 }
