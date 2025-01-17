@@ -214,5 +214,34 @@ namespace ChatClient.Views
             return ipAddress?.ToString() ?? "No valid IP address found";
         }
 
+        private async void BrowseButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Create an instance of OpenFileDialog
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+
+            // Set file filters (optional)
+            openFileDialog.Filter = "All files (*.*)|*.*";
+
+            // Show the dialog
+            bool? result = openFileDialog.ShowDialog();
+
+            // If the user selected a file
+            if (result == true)
+            {
+                // Get the file path
+                string filePath = openFileDialog.FileName;
+
+                if (_mode == CLIENT_STRING)
+                {
+                    // Input the file path to the TCPClient to send the file
+                    await _tcpClientService.SendFileAsync(filePath);
+                }
+                else if (_mode == SERVER_STRING) 
+                {
+                    // Input the file path to broadcast file to all clients
+                    await _tcpServerService.BroadcastFileToClientsParallelAsync(filePath, null!);
+                }
+            }
+        }
     }
 }

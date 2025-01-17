@@ -12,7 +12,7 @@
         WindowStartupLocation="CenterScreen">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="100"></ColumnDefinition>
+            <ColumnDefinition Width="50"></ColumnDefinition>
             <ColumnDefinition></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -47,12 +47,24 @@
                                  FontSize="16" VerticalAlignment="Center"
                                  PreviewKeyDown="MessageTextBox_PreviewKeyDown">
             </emoji:RichTextBox>
-            <Button HorizontalAlignment="Right" VerticalAlignment="Center" Width="50" Height="30" Margin="0 0 20 0" 
+
+            <!-- Browse Button -->
+            <Button HorizontalAlignment="Right" VerticalAlignment="Center" Width="50" Height="30" Margin="0 0 10 0" 
+                Foreground="AntiqueWhite" Click="BrowseButton_Click">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Folder" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <!-- Send Emojis Button -->
+            <Button HorizontalAlignment="Right" VerticalAlignment="Center" Width="50" Height="30" Margin="0 0 10 0" 
                     Foreground="AntiqueWhite" Click="EmojiButton_Click">
                 <StackPanel Orientation="Horizontal">
                     <materialDesign:PackIcon Kind="Emoji" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
+
+            <!-- Send Button -->
             <Button HorizontalAlignment="Right" VerticalAlignment="Center" Width="50" Height="30" 
                     Foreground="AntiqueWhite" Click="SendButton_Click">
                 <StackPanel Orientation="Horizontal">

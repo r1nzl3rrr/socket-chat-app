@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -10,6 +11,7 @@ public class TCPServerService
     private TcpListener _server;
     private ConcurrentDictionary<TcpClient, NetworkStream> _clients;  // Store multiple clients and their streams
     private Action<string> _updateUI;    // Callback to update the UI
+    private string _fileDirectory = "ReceivedFiles";  // Directory to store received files
 
     public TCPServerService(string host, int port, Action<string> updateUI)
     {
@@ -17,6 +19,11 @@ public class TCPServerService
         _port = port;
         _clients = new ConcurrentDictionary<TcpClient, NetworkStream>();
         _updateUI = updateUI;
+        if (!Directory.Exists(_fileDirectory))
+        {
+            Directory.CreateDirectory(_fileDirectory);
+        }
+
     }
 
     // This method will process data from the client asynchronously
@@ -24,30 +31,56 @@ public class TCPServerService
     {
         string data;
         int count;
+        bool isReceivingFile = false;
+        string fileName = string.Empty;
+        FileStream fileStream = null;
 
         try
         {
             NetworkStream clientStream = _clients[client]; // Store the stream
-
-            // Get the client's IP address
             var clientEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
             string clientIP = clientEndPoint?.Address.ToString() ?? "Unknown IP";
+            Byte[] bytes = new Byte[4096];
 
-            Byte[] bytes = new Byte[1024];
             while ((count = await clientStream.ReadAsync(bytes, 0, bytes.Length)) != 0)
             {
                 data = Encoding.UTF8.GetString(bytes, 0, count);
-                string messageWithIP = $"[{clientIP}]: {data}";
-                Console.WriteLine($"Received {data} at {DateTime.Now:t}");
 
-                // Update WPF UI with received message
-                _updateUI?.Invoke($"{messageWithIP}");
+                if (data.StartsWith("STARTFILE:"))
+                {
+                    // Start receiving file
+                    isReceivingFile = true;
+                    fileName = data.Replace("STARTFILE:", "").Trim();
+                    string filePath = Path.Combine(_fileDirectory, fileName);
+                    fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+                    _updateUI?.Invoke($"Receiving file '{fileName}' from {clientIP}...");
+                }
+                else if (data.StartsWith("ENDFILE"))
+                {
+                    // End file transfer
+                    isReceivingFile = false;
+                    fileStream?.Close();
+                    fileStream = null;
+                    _updateUI?.Invoke($"File '{fileName}' received successfully from {clientIP}.");
 
-                // Broadcast the message to all connected clients
-                BroadcastMessageToClientsParallel(messageWithIP, client);
+                    // Broadcast the file to all clients
+                    await BroadcastFileToClientsParallelAsync(fileName, client);
+                }
+                else if (isReceivingFile && fileStream != null)
+                {
+                    // Write file data
+                    await fileStream.WriteAsync(bytes, 0, count);
+                }
+                else
+                {
+                    string messageWithIP = $"[{clientIP}]: {data}";
+                    _updateUI?.Invoke($"{messageWithIP}");
+
+                    // Broadcast normal messages to other clients
+                    await BroadcastMessageToClientsParallel(messageWithIP, client);
+                }
             }
 
-            // Remove client when done
             _clients.TryRemove(client, out _);
             client.Close();
         }
@@ -55,7 +88,69 @@ public class TCPServerService
         {
             Console.WriteLine($"Exception: {ex.Message}");
         }
+        finally
+        {
+            // Ensure the file stream is closed in case of an error
+            fileStream?.Close();
+        }
     }
+
+    // Method to broadcast a file to all clients
+    public async Task BroadcastFileToClientsParallelAsync(string fileName, TcpClient senderClient)
+    {
+        try
+        {
+            string filePath = Path.Combine(_fileDirectory, fileName);
+
+            if (!File.Exists(filePath))
+            {
+                _updateUI?.Invoke($"Error: File '{fileName}' not found for broadcasting.");
+                return;
+            }
+
+            byte[] buffer = new byte[4096];
+
+            // Notify clients that a file is being sent
+            await BroadcastMessageToClientsParallel($"STARTFILE:{fileName}", senderClient);
+
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            {
+                int bytesRead;
+
+                // Read file in chunks and send them in parallel to all clients
+                while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    // Send file chunks to all clients except the sender in parallel using PLINQ
+                    var tasks = _clients.Keys.AsParallel().Select(async client =>
+                    {
+                        try
+                        {
+                            if (client != senderClient && client.Connected)
+                            {
+                                await _clients[client].WriteAsync(buffer, 0, bytesRead);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _updateUI?.Invoke($"Error broadcasting to client: {ex.Message}");
+                        }
+                    });
+
+                    // Await all the tasks to ensure each chunk is sent before moving to the next
+                    await Task.WhenAll(tasks);
+                }
+            }
+
+            // Notify clients that file transfer is complete
+            await BroadcastMessageToClientsParallel("ENDFILE", senderClient);
+            _updateUI?.Invoke($"File '{fileName}' broadcasted to all clients.");
+        }
+        catch (Exception ex)
+        {
+            _updateUI?.Invoke($"Error broadcasting file: {ex.Message}");
+        }
+    }
+
 
     // This method will start the server and wait for connections asynchronously
     public async Task ExecuteServerAsync()
@@ -84,6 +179,7 @@ public class TCPServerService
         }
     }
 
+    // Listening for clients
     private async Task TcpListen(TcpListener server)
     {
         while (true)
@@ -107,19 +203,19 @@ public class TCPServerService
     }
 
     // Broadcast a message to all connected clients asynchronously using PLINQ
-    public void BroadcastMessageToClientsParallel(string message, TcpClient senderClient)
+    public async Task BroadcastMessageToClientsParallel(string message, TcpClient senderClient)
     {
         byte[] msg = Encoding.UTF8.GetBytes(message);
 
         // Use PLINQ to broadcast messages to clients in parallel
-        _clients.Keys.AsParallel().ForAll(client =>
+        var tasks = _clients.Keys.AsParallel().Select(async client =>
         {
             try
             {
                 if (client != senderClient && client.Connected)
                 {
                     // Write the message asynchronously for each client
-                    _clients[client].WriteAsync(msg, 0, msg.Length).Wait();
+                    await _clients[client].WriteAsync(msg, 0, msg.Length);
                 }
             }
             catch (Exception ex)
@@ -127,9 +223,13 @@ public class TCPServerService
                 Console.WriteLine($"Error broadcasting to client: {ex.Message}");
             }
         });
+
+        // Wait for all the broadcast tasks to complete
+        await Task.WhenAll(tasks);
     }
 
 
+    // Close server connection
     public void CloseServer()
     {
         foreach (var client in _clients.Keys)
