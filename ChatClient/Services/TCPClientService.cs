@@ -133,7 +133,6 @@ public class TCPClientService
         }
     }
 
-
     // Send File to server
     public async Task SendFileAsync(string filePath)
     {
@@ -148,18 +147,22 @@ public class TCPClientService
             byte[] buffer = new byte[4096]; // Buffer to hold chunks of the file
             int bytesRead;
 
+            // Get the file size to send along with the STARTFILE message
+            long fileSize = new FileInfo(filePath).Length;
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                // Notify the server that the file transfer is starting
-                await SendMessageAsync($"STARTFILE:{Path.GetFileName(filePath)}");
+                // Notify the server that the file transfer is starting with the file size
+                await SendMessageAsync($"STARTFILE:{Path.GetFileName(filePath)}:{fileSize}");
 
                 // Read file in chunks and send each chunk to the server
                 while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
                     await _clientStream.WriteAsync(buffer, 0, bytesRead); // Send the chunk
+                    await _clientStream.FlushAsync(); // Ensure the stream is flushed after each write
                 }
 
                 // Notify the server that the file transfer is complete
+                // Ensure this is sent as a separate write, after file chunks are fully sent
                 await SendMessageAsync("ENDFILE");
             }
 
@@ -170,5 +173,7 @@ public class TCPClientService
             _updateUI?.Invoke($"Error: {ex.Message}");
         }
     }
+
+
 
 }

@@ -29,11 +29,12 @@ public class TCPServerService
     // This method will process data from the client asynchronously
     private async Task ProcessDataAsync(TcpClient client)
     {
-        string data;
         int count;
         bool isReceivingFile = false;
         string fileName = string.Empty;
         FileStream fileStream = null;
+        long fileSize = 0;
+        long receivedFileSize = 0;
 
         try
         {
@@ -44,43 +45,56 @@ public class TCPServerService
 
             while ((count = await clientStream.ReadAsync(bytes, 0, bytes.Length)) != 0)
             {
-                data = Encoding.UTF8.GetString(bytes, 0, count);
+                if (!isReceivingFile)
+                {
+                    string data = Encoding.UTF8.GetString(bytes, 0, count);
 
-                if (data.StartsWith("STARTFILE:"))
-                {
-                    // Start receiving file
-                    isReceivingFile = true;
-                    fileName = data.Replace("STARTFILE:", "").Trim();
-                    string filePath = Path.Combine(_fileDirectory, fileName);
-                    fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-                    _updateUI?.Invoke($"Receiving file '{fileName}' from {clientIP}...");
-                }
-                else if (data.StartsWith("ENDFILE"))
-                {
-                    // End file transfer
-                    isReceivingFile = false;
-                    fileStream?.Close();
-                    fileStream = null;
-                    _updateUI?.Invoke($"File '{fileName}' received successfully from {clientIP}.");
+                    if (data.StartsWith("STARTFILE:"))
+                    {
+                        // Start receiving the file, now expecting the file size and name
+                        isReceivingFile = true;
+                        string[] fileInfo = data.Replace("STARTFILE:", "").Trim().Split(':');
+                        fileName = fileInfo[0];
+                        fileSize = long.Parse(fileInfo[1]);  // Get the file size
 
-                    // Broadcast the file to all clients
-                    await BroadcastFileToClientsParallelAsync(fileName, client);
-                }
-                else if (isReceivingFile && fileStream != null)
-                {
-                    // Write file data
-                    await fileStream.WriteAsync(bytes, 0, count);
+                        string filePath = Path.Combine(_fileDirectory, fileName);
+                        fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+                        receivedFileSize = 0;  // Reset received file size tracker
+                        _updateUI?.Invoke($"Receiving file '{fileName}' ({fileSize} bytes)...");
+
+                        continue;  // Skip processing further and continue reading file data
+                    }
+                    else
+                    {
+                        // Normal message from the client
+                        string messageWithIP = $"[{clientIP}]: {data}";
+                        _updateUI?.Invoke($"{messageWithIP}");
+
+                        // Broadcast the message to other clients
+                        await BroadcastMessageToClientsParallel(messageWithIP, client);
+                    }
                 }
                 else
                 {
-                    string messageWithIP = $"[{clientIP}]: {data}";
-                    _updateUI?.Invoke($"{messageWithIP}");
+                    // File data receiving mode
+                    await fileStream.WriteAsync(bytes, 0, count);
+                    receivedFileSize += count;
 
-                    // Broadcast normal messages to other clients
-                    await BroadcastMessageToClientsParallel(messageWithIP, client);
+                    // Check if the file is completely received
+                    if (receivedFileSize >= fileSize)
+                    {
+                        isReceivingFile = false;  // Exit file receiving mode
+                        fileStream?.Close();
+                        fileStream = null;
+                        _updateUI?.Invoke($"File '{fileName}' received successfully from {clientIP}.");
+
+                        // Broadcast the file to all other clients
+                        await BroadcastFileToClientsParallelAsync(fileName, client);
+                    }
                 }
             }
 
+            // Remove client when done
             _clients.TryRemove(client, out _);
             client.Close();
         }
@@ -90,10 +104,11 @@ public class TCPServerService
         }
         finally
         {
-            // Ensure the file stream is closed in case of an error
+            // Ensure the file stream is closed in case of error
             fileStream?.Close();
         }
     }
+
 
     // Method to broadcast a file to all clients
     public async Task BroadcastFileToClientsParallelAsync(string fileName, TcpClient senderClient)
@@ -128,6 +143,7 @@ public class TCPServerService
                             if (client != senderClient && client.Connected)
                             {
                                 await _clients[client].WriteAsync(buffer, 0, bytesRead);
+                                await _clients[client].FlushAsync(); // Ensure the stream is flushed
                             }
                         }
                         catch (Exception ex)
@@ -227,7 +243,6 @@ public class TCPServerService
         // Wait for all the broadcast tasks to complete
         await Task.WhenAll(tasks);
     }
-
 
     // Close server connection
     public void CloseServer()
